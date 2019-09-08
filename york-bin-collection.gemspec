@@ -1,10 +1,9 @@
 lib = File.expand_path("lib", __dir__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require "york/bin/collection/version"
 
 Gem::Specification.new do |spec|
   spec.name          = "york-bin-collection"
-  spec.version       = YorkBinCollection::VERSION
+  spec.version       = "1.0.0"
   spec.authors       = ["Aaron Christiansen"]
   spec.email         = ["aaronc20000@gmail.com"]
 
@@ -23,6 +22,8 @@ Gem::Specification.new do |spec|
   spec.bindir        = "exe"
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
+
+  spec.add_dependency "nokogiri", "~> 1.10"
 
   spec.add_development_dependency "bundler", "~> 2.0"
   spec.add_development_dependency "rake", "~> 10.0"
