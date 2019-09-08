@@ -1,39 +1,25 @@
-# York::Bin::Collection
+# YorkBinCollection
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/york/bin/collection`. To experiment with that code, run `bin/console` for an interactive prompt.
-
-TODO: Delete this and the text above, and describe your gem
+This is an interface to the City of York website, scraping the calendar page
+for refuse collection (or using its JSON API where possible).
 
 ## Installation
 
-Add this line to your application's Gemfile:
-
-```ruby
-gem 'york-bin-collection'
 ```
-
-And then execute:
-
-    $ bundle
-
-Or install it yourself as:
-
-    $ gem install york-bin-collection
+gem install york-bin-collection
+```
 
 ## Usage
 
-TODO: Write usage instructions here
+```ruby
+require 'york-bin-collection'
 
-## Development
+# Get the unique ID (UPRN) for some property in a postcode
+uprn = YorkBinCollection.get_uprns_for_postcode("YO10 1AB").sample
 
-After checking out the repo, run `bin/setup` to install dependencies. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
-
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
-
-## Contributing
-
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/york-bin-collection.
-
-## License
-
-The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
+# Get the collection schedules
+dates = YorkBinCollection.get_collection_dates(uprn)
+dates.recycling # => [Date, Date, ...]
+dates.household # => [Date, Date, ...]
+dates.garden # => [Date, Date, ...]
+```
