@@ -1,10 +1,13 @@
 require 'nokogiri'
 require 'open-uri'
+require 'cgi'
+require 'json'
 
 module YorkBinCollection
   VERSION = '1.0.0'
 
-  CALENDAR_ENDPOINT = 'https://doitonline.york.gov.uk/BinsApi/Calendars/Index'
+  CALENDARS_ENDPOINT = 'https://doitonline.york.gov.uk/BinsApi/Calendars/Index'
+  EXOR_ENDPOINT = 'https://doitonline.york.gov.uk/BinsApi/EXOR'
 
   CollectionDates = Struct.new('CollectionDates', :recycling, :household, :garden)
 
@@ -17,9 +20,12 @@ module YorkBinCollection
   # @return [Boolean] True if the string is a syntatically valid UPRN, false
   #   otherwise.
   def self.valid_uprn?(uprn)
-    /[A-Za-z0-9]+/ === uprn
+    /[A-Za-z0-9]+/ === uprn || up
   end
 
+  ##
+  # A hash of collection types, as keys in a CollectionDates object, to their
+  # 'friendly' names.
   def self.collection_types
     {
       recycling: 'Recycling',
@@ -32,9 +38,11 @@ module YorkBinCollection
   # Given a valid UPRN in the City of York, returns an CollectionDates struct of
   # dates each bin will be collected. The keys are :recycling, :household and
   # :garden.
+  # @param [String] uprn A valid UPRN.
+  # @return [CollectionDates] The known waste collection dates.
   def self.get_collection_dates(uprn)
     raise ArgumentError, 'invalid uprn' unless valid_uprn?(uprn)
-    url = CALENDAR_ENDPOINT + "?uprn=#{uprn}"
+    url = CALENDARS_ENDPOINT + "?uprn=#{uprn}"
     document = Nokogiri::HTML(open(url))
 
     # The format of the document is:
@@ -68,17 +76,32 @@ module YorkBinCollection
     collection_date_elements.each do |row_or_heading|
       if row_or_heading.name == "h2"
         current_heading = row_or_heading.text
-      elsif
+      else
         raise 'format error: didn\'t encounter heading before date' unless current_heading
 
         day, kind = row_or_heading.children.map(&:text)
         date = Date.parse("#{day} #{current_heading}")
-        key = collection_types.rassoc(kind)&.first || raise "unknown collection kind #{kind}"
+        key = collection_types.rassoc(kind)&.first
+        raise "unknown collection kind #{kind}" unless kind
 
         collection_dates.send(key) << date
       end
-
-      collection_dates
     end
+
+    collection_dates
+  end
+
+  ##
+  # Given a postcode, returns a hash of UPRNs in that postcode to their house
+  # addresses.
+  # @param [String] postcode A valid postcode, which is permitted to include
+  #   a space.
+  # @param [Hash] A hash of UPRNs to short addresses for the property. If the
+  #   postcode is invalid, this may be blank.
+  def self.get_uprns_for_postcode(postcode)
+    url = "#{EXOR_ENDPOINT}/getPropertiesForPostCode?postcode=#{CGI.escape(postcode)}"
+    JSON.parse(open(url).read).map do |property|
+      [property['Uprn'].to_s, property['ShortAddress']]
+    end.to_h
   end
 end
